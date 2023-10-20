@@ -1,0 +1,7 @@
+__pycache__
+
+venv
+.aider*
+*.pyc
+
+sumarios/*.txt
