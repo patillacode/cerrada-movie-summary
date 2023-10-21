@@ -1,3 +1,4 @@
+import argparse
 import sys
 
 from pathlib import Path
@@ -25,14 +26,14 @@ def ask_user_for_url():
     return url
 
 
-def write_to_file(title, cast_names, director, year):
+def write_to_file(title, cast_names, director, year, folder):
     """Write the title, cast_names, and director to a file named after the title."""
     print("creando fichero ...")
-    Path(f"./sumarios/{year}").mkdir(parents=True, exist_ok=True)
+    Path(f"{folder}").mkdir(parents=True, exist_ok=True)
 
-    with open(f"./sumarios/{year}/{title}.txt", "w") as file:
+    with open(f"{folder}/{title}.txt", "w") as file:
         file.write(f"{title}\n-\n{' '.join(cast_names)}\n-\n{director} - {year}\n")
-    print(f"fichero creado en: {Path(f'./sumarios/{year}').resolve()}/{title}.txt")
+    print(f"fichero creado en: {Path(f'{folder}').resolve()}/{title}.txt")
 
 
 def get_parenthesis_content(string):
@@ -53,7 +54,7 @@ def get_cast_member_info(headless, person):
             By.XPATH, "/html/body/div/div[2]/div[2]/div[2]/ul/li[1]/a"
         ).text
         movies_number = int(get_parenthesis_content(performer_credits))
-    print(f"{name} ({movies_number})")
+    # print(f"{name} ({movies_number})")
     return {"name": name, "movies_number": movies_number}
 
 
@@ -63,22 +64,37 @@ def ordered_cast_members(headless, castbox):
     return sorted(cast_members, key=lambda member: member["movies_number"], reverse=True)
 
 
-def main(headless):
+def main(headless, url, folder):
     """Main function that prompts for a URL, scrapes data, and writes it to a file."""
-    url = input("Mete la URL de la peli: ")
+    if url is None:
+        url = input("Mete la URL de la peli: ")
     with get_driver(headless) as driver:
         driver.get(url)
-        print("recopilando datos sobre la peli ...", end="")
+        print("recopilando datos sobre la peli... ", end="")
         title = driver.find_element(By.TAG_NAME, "h1").text
         print(title)
         year = get_parenthesis_content(title)
         castbox = driver.find_elements(By.CLASS_NAME, "castbox")
         director = driver.find_element(By.XPATH, "/html/body/div/div[2]/div[1]/p[4]").text
-        print("recopilando datos sobre el reparto ...")
+        print("recopilando datos sobre el reparto... ")
         cast_members = ordered_cast_members(headless, castbox)
-        write_to_file(title, [member["name"] for member in cast_members], director, year)
+        write_to_file(
+            title, [member["name"] for member in cast_members], director, year, folder
+        )
 
 
 if __name__ == "__main__":
-    headless = "--headless" in sys.argv
-    main(headless)
+    parser = argparse.ArgumentParser(description="Web scraping script.")
+    parser.add_argument(
+        "--headless", action="store_true", help="Run the script in headless mode."
+    )
+    parser.add_argument("-u", "--url", type=str, help="URL to be searched.")
+    parser.add_argument(
+        "-f",
+        "--folder",
+        type=str,
+        default="./sumarios",
+        help="Destination folder for the generated file.",
+    )
+    args = parser.parse_args()
+    main(args.headless, args.url, args.folder)
