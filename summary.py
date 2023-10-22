@@ -1,8 +1,8 @@
 import argparse
+import re
 import sys
 
 from pathlib import Path
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
@@ -74,13 +74,15 @@ def get_cast_member_info(headless, person):
     person_tag = person.find_element(By.TAG_NAME, "a")
     href = person_tag.get_attribute("href")
     name = person_tag.text
+    gender = re.match(".*/gender=(.)/", href).group(1)
+
     with get_driver(headless) as driver:
         driver.get(href)
         performer_credits = driver.find_element(
             By.XPATH, "/html/body/div/div[2]/div[2]/div[2]/ul/li[1]/a"
         ).text
         movies_number = int(get_parenthesis_content(performer_credits))
-    return {"name": name, "movies_number": movies_number}
+    return {"name": name, "movies_number": movies_number, "gender": gender}
 
 
 def ordered_cast_members(headless, castbox):
@@ -100,7 +102,11 @@ def ordered_cast_members(headless, castbox):
         data = get_cast_member_info(headless, person)
         if not data["name"].startswith("Unknown"):
             cast_members.append(data)
-    return sorted(cast_members, key=lambda member: member["movies_number"], reverse=True)
+    return sorted(
+        cast_members,
+        key=lambda member: (member["gender"] == "f", member["movies_number"]),
+        reverse=True,
+    )
 
 
 def get_url(url):
