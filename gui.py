@@ -10,6 +10,13 @@ colors = ["orange", "lightblue", "yellow", "purple"]
 
 
 def run_script_in_thread(values, window):
+    """
+    Run the script in a separate thread.
+
+    Parameters:
+    values (dict): The values from the GUI.
+    window (sg.Window): The PySimpleGUI window.
+    """
     global script_running
     script_running = True
     url = values["-URL-"]
@@ -29,6 +36,13 @@ def run_script_in_thread(values, window):
 
 
 def run_script(values, window):
+    """
+    Run the script and update the status message.
+
+    Parameters:
+    values (dict): The values from the GUI.
+    window (sg.Window): The PySimpleGUI window.
+    """
     global script_running
     status_message = "Running... Please wait..."
     threading.Thread(
@@ -43,6 +57,9 @@ def run_script(values, window):
 
 
 def view_file():
+    """
+    Open a file and display its contents in a popup window.
+    """
     file = sg.popup_get_file("Open File", no_window=True)
     if file is not None:
         with open(file, "r") as f:
@@ -51,6 +68,10 @@ def view_file():
 
 
 def main():
+    """
+    The main function of the GUI.
+    It creates the window, handles events, and runs the script.
+    """
     sg.theme("SystemDefaultForReal")
     layout = [
         [
@@ -98,7 +119,7 @@ def main():
         layout,
         size=(800, 200),
         font=("Helvetica", 18),
-        icon="app_icon.icns",
+        icon="app_icon.png",
     )
 
     while True:

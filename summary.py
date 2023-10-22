@@ -8,7 +8,15 @@ from selenium.webdriver.common.by import By
 
 
 def get_driver(headless):
-    # Chrome is giving us some issues when trying to run headless, so we use Firefox
+    """
+    Get a webdriver. Use Firefox if headless mode is enabled, otherwise use Chrome.
+
+    Parameters:
+    headless (bool): Whether to run the browser in headless mode.
+
+    Returns:
+    webdriver: The webdriver.
+    """
     if headless:
         options = webdriver.FirefoxOptions()
         options.add_argument("--headless")
@@ -37,14 +45,32 @@ def write_to_file(title, cast_names, director, year, folder):
 
 
 def get_parenthesis_content(string):
-    """Extract the year from a string that contains it in parentheses."""
+    """
+    Extract the content inside the first pair of parentheses in a string.
+
+    Parameters:
+    string (str): The string to extract from.
+
+    Returns:
+    str: The content inside the parentheses.
+    """
     start = string.find("(") + 1
     end = string.find(")")
     return string[start:end]
 
 
 def get_cast_member_info(headless, person):
-    """Retrieve and return the name and number of movies of a cast member."""
+    """
+    Retrieve and return the name and number of movies of a cast member.
+
+    Parameters:
+    headless (bool): Whether to run the browser in headless mode.
+    person (selenium.webdriver.remote.webelement.WebElement): The WebElement representing
+    the cast member.
+
+    Returns:
+    dict: A dictionary containing the name and number of movies of the cast member.
+    """
     person_tag = person.find_element(By.TAG_NAME, "a")
     href = person_tag.get_attribute("href")
     name = person_tag.text
@@ -54,20 +80,50 @@ def get_cast_member_info(headless, person):
             By.XPATH, "/html/body/div/div[2]/div[2]/div[2]/ul/li[1]/a"
         ).text
         movies_number = int(get_parenthesis_content(performer_credits))
-    # print(f"{name} ({movies_number})")
     return {"name": name, "movies_number": movies_number}
 
 
 def ordered_cast_members(headless, castbox):
-    """Order the cast members by their number of movies and return them."""
+    """
+    Order the cast members by their number of movies and return them.
+
+    Parameters:
+    headless (bool): Whether to run the browser in headless mode.
+    castbox (list): A list of WebElements representing the cast members.
+
+    Returns:
+    list: A list of dictionaries containing the names and number of movies of the
+    cast members, ordered by number of movies.
+    """
     cast_members = [get_cast_member_info(headless, person) for person in castbox]
     return sorted(cast_members, key=lambda member: member["movies_number"], reverse=True)
 
 
-def main(headless, url, folder):
-    """Main function that prompts for a URL, scrapes data, and writes it to a file."""
+def get_url(url):
+    """
+    Prompt the user for a URL if none is provided.
+
+    Parameters:
+    url (str): The URL provided.
+
+    Returns:
+    str: The URL.
+    """
     if url is None:
         url = input("Mete la URL de la peli: ")
+    return url
+
+
+def main(headless, url, folder):
+    """
+    Main function that prompts for a URL, scrapes data, and writes it to a file.
+
+    Parameters:
+    headless (bool): Whether to run the browser in headless mode.
+    url (str): The URL to be searched.
+    folder (str): The destination folder for the generated file.
+    """
+    url = get_url(url)
     with get_driver(headless) as driver:
         driver.get(url)
         print("recopilando datos sobre la peli... ", end="")
