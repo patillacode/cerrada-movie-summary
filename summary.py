@@ -40,7 +40,7 @@ def write_to_file(title, cast_names, director, year, folder):
     Path(f"{folder}").mkdir(parents=True, exist_ok=True)
 
     with open(f"{folder}/{title}.txt", "w") as file:
-        file.write(f"{title}\n-\n{' '.join(cast_names)}\n-\n{director} - {year}\n")
+        file.write(f"{title}\n.\n{' '.join(cast_names)}\n.\n{director}\n".upper())
     print(f"fichero creado en: {Path(f'{folder}').resolve()}/{title}.txt")
 
 
@@ -95,7 +95,11 @@ def ordered_cast_members(headless, castbox):
     list: A list of dictionaries containing the names and number of movies of the
     cast members, ordered by number of movies.
     """
-    cast_members = [get_cast_member_info(headless, person) for person in castbox]
+    cast_members = []
+    for person in castbox:
+        data = get_cast_member_info(headless, person)
+        if not data["name"].startswith("Unknown"):
+            cast_members.append(data)
     return sorted(cast_members, key=lambda member: member["movies_number"], reverse=True)
 
 
