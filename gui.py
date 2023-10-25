@@ -1,9 +1,13 @@
-import PySimpleGUI as sg
-import subprocess
 import os
-import time
-import threading
 import random
+import subprocess
+import threading
+import time
+import traceback
+
+import PySimpleGUI as sg
+
+from exceptions import InternalException
 
 script_running = False
 colors = ["orange", "lightblue", "yellow", "purple"]
@@ -29,9 +33,24 @@ def run_script_in_thread(values, window):
         command.append("--headless")
     try:
         subprocess.run(command, check=True)
-        window.write_event_value("UpdateStatus", f"File created successfully!")
-    except Exception:
-        window.write_event_value("UpdateStatus", f"An error occurred")
+        window.write_event_value("UpdateStatus", "File created successfully!")
+        os.system("afplay /System/Library/Sounds/Glass.aiff -v 8")
+        print("File created successfully!")
+    except InternalException as err:
+        window.write_event_value("UpdateStatus", "An error occurred")
+        os.system("afplay /System/Library/Sounds/Sosumi.aiff -v 8")
+        os.system("afplay /System/Library/Sounds/Sosumi.aiff -v 8")
+        print(f"Internal Exception: {err}")
+    except Exception as err:
+        window.write_event_value(
+            "UpdateStatus",
+            "An error occurred",
+        )
+        os.system("afplay /System/Library/Sounds/Sosumi.aiff -v 8")
+        os.system("afplay /System/Library/Sounds/Sosumi.aiff -v 8")
+        print(
+            f"An unexpected error occurred: {err}. Traceback:\n{traceback.format_exc()}"
+        )
     script_running = False
 
 
@@ -133,10 +152,12 @@ def main():
         elif event == "Clear URL":
             window["-URL-"].update("")
         elif event == "UpdateStatus":
-            if values["UpdateStatus"] == "An error occurred":
-                window["-STATUS-"].update(values["UpdateStatus"], text_color="red")
-            else:
-                window["-STATUS-"].update(values["UpdateStatus"], text_color="green")
+            window["-STATUS-"].update(
+                values["UpdateStatus"],
+                text_color="red"
+                if "An error occurred" in values["UpdateStatus"]
+                else "green",
+            )
             window.refresh()
 
     window.close()

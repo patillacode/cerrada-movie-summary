@@ -1,10 +1,22 @@
 import argparse
 import re
-import sys
+import traceback
 
 from pathlib import Path
+
+from retrying import retry
 from selenium import webdriver
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    TimeoutException,
+    WebDriverException,
+)
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+from exceptions import InternalException
+from logs import logger
 
 
 def get_driver(headless):
@@ -124,6 +136,11 @@ def get_url(url):
     return url
 
 
+@retry(
+    retry_on_exception=lambda e: isinstance(e, (InternalException)),
+    stop_max_attempt_number=3,
+    wait_fixed=2000,
+)
 def main(headless, url, folder):
     """
     Main function that prompts for a URL, scrapes data, and writes it to a file.
@@ -134,19 +151,43 @@ def main(headless, url, folder):
     folder (str): The destination folder for the generated file.
     """
     url = get_url(url)
-    with get_driver(headless) as driver:
-        driver.get(url)
-        print("recopilando datos sobre la peli... ", end="")
-        title = driver.find_element(By.TAG_NAME, "h1").text
-        print(title)
-        year = get_parenthesis_content(title)
-        castbox = driver.find_elements(By.CLASS_NAME, "castbox")
-        director = driver.find_element(By.XPATH, "/html/body/div/div[2]/div[1]/p[4]").text
-        print("recopilando datos sobre el reparto... ")
-        cast_members = ordered_cast_members(headless, castbox)
-        write_to_file(
-            title, [member["name"] for member in cast_members], director, year, folder
+    try:
+        with get_driver(headless) as driver:
+            print("getting page at url: ", url)
+            driver.get(url)
+            print("recopilando datos sobre la peli... ", end="")
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.TAG_NAME, "h1"))
+            )
+            title = driver.find_element(By.TAG_NAME, "h1").text
+            print(title)
+            year = get_parenthesis_content(title)
+            castbox = driver.find_elements(By.CLASS_NAME, "castbox")
+            director = driver.find_element(
+                By.XPATH, "/html/body/div/div[2]/div[1]/p[4]"
+            ).text
+            print("recopilando datos sobre el reparto... ")
+            cast_members = ordered_cast_members(headless, castbox)
+            write_to_file(
+                title, [member["name"] for member in cast_members], director, year, folder
+            )
+
+    except NoSuchElementException:
+        error_message = (
+            f"{traceback.format_exc()}\nURL: {url}. An element was not found on the page."
         )
+        logger.error(error_message)
+        raise InternalException(error_message)
+    except TimeoutException:
+        error_message = f"{traceback.format_exc()}\nURL: {url}. The operation timed out."
+        logger.error(error_message)
+        raise InternalException(error_message)
+    except WebDriverException as e:
+        error_message = (
+            f"{traceback.format_exc()}\nURL: {url}. A WebDriver exception occurred: {e}."
+        )
+        logger.error(error_message)
+        raise InternalException(error_message)
 
 
 if __name__ == "__main__":
