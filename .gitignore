@@ -3,5 +3,6 @@ __pycache__
 venv
 .aider*
 *.pyc
+.vscode
 
 sumarios/*.txt
