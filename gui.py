@@ -107,7 +107,7 @@ def main():
             sg.Column(
                 [
                     [
-                        sg.Checkbox("Headless", key="-HEADLESS-"),
+                        sg.Checkbox("Headless", key="-HEADLESS-", default=True),
                         sg.Text("(enable to hide browser)"),
                     ]
                 ],
@@ -116,7 +116,12 @@ def main():
         ],
         [
             sg.Column(
-                [[sg.Button("Run Script", bind_return_key=True), sg.Button("View File")]],
+                [
+                    [
+                        sg.Button("Run Script", bind_return_key=True),
+                        sg.Button("View File"),
+                    ]
+                ],
                 justification="center",
             )
         ],
@@ -133,12 +138,22 @@ def main():
         ],
     ]
 
+    # Get screen size
+    screen_width, screen_height = sg.Window.get_screen_size()
+
+    # Define window size
+    window_width = 800
+    window_height = 200
+
+    # Calculate position for bottom right
+    position = (screen_width - window_width - 50, screen_height - window_height - 50)
     window = sg.Window(
         "IAFD Scraper GUI",
         layout,
-        size=(800, 200),
+        # size=(800, 200),
         font=("Helvetica", 18),
         icon="app_icon.png",
+        location=position,
     )
 
     while True:
